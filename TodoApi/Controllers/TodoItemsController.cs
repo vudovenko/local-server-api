@@ -17,15 +17,18 @@ namespace TodoApi.Controllers
     {
         private string[] furnitureNames;
         private Dictionary<string, byte[]> photos;
+        private Dictionary<string, byte[]> fbx;
         private byte[] allPhotosInZip;
         private string path = ""; // enter the path to the photo folder here
 
         public TodoItemsController()
         {
             photos = new Dictionary<string, byte[]>();
+            fbx = new Dictionary<string, byte[]>();
 
             GetNames();
-            ConvertPhotosToBytes();
+            ConvertFilesToBytes("*jpg", photos);
+            ConvertFilesToBytes("*fbx", fbx);
             PackPhotosIntoZip();
 
         }
@@ -51,11 +54,14 @@ namespace TodoApi.Controllers
             await Response.Body.WriteAsync(photos[newName], 0, photos[newName].Length);
         }
 
-        //[Route("asset/{name}")]
-        //public async Task GetPhotos(string name)
-        //{
-
-        //}
+        [Route("asset/{name}")]
+        public async Task ConvertFBXToBytes(string name)
+        {
+            TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
+            var newName = ti.ToTitleCase(name) + ".fbx";
+            byte[] fbxInZip = GetFBXFileIntoZip(newName);
+            await Response.Body.WriteAsync(fbxInZip, 0, fbxInZip.Length);
+        }
 
         private void GetNames()
         {
@@ -66,15 +72,15 @@ namespace TodoApi.Controllers
             furnitureNames = names;
         }        
 
-        private void ConvertPhotosToBytes()
+        private void ConvertFilesToBytes(string fileFormat, Dictionary<string, byte[]> bytes)
         {
             var directories = Directory.GetDirectories(path);
             //var names = new string[directories.Count()];
             foreach (var dir in directories)
             {
-                var photoPath = Directory.GetFiles(dir, "*.jpg");
-                var photoName = Path.GetFileName(photoPath.First());
-                photos.Add(photoName, System.IO.File.ReadAllBytes(photoPath.First()));
+                var filePath = Directory.GetFiles(dir, fileFormat);
+                var fileName = Path.GetFileName(filePath.First());
+                bytes.Add(fileName, System.IO.File.ReadAllBytes(filePath.First()));
             }
         }
 
@@ -96,5 +102,30 @@ namespace TodoApi.Controllers
                 allPhotosInZip = zipToOpen.ToArray();
             }
         }
+
+        private byte[] GetFBXFileIntoZip(string fileName)
+        {
+            using (var zipToOpen = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update))
+                {
+                    foreach (var fbxName in fbx.Keys)
+                    {
+                        if (fbxName == fileName)
+                        {
+                            ZipArchiveEntry readmeEntry = archive.CreateEntry(fbxName);
+                            using (Stream stream = readmeEntry.Open())
+                            {
+                                stream.Write(fbx[fbxName]);
+                                break;
+                            }
+                        }
+                        
+                    }
+                }
+                return zipToOpen.ToArray();
+            }
+        }
+
     }
 }
