@@ -15,7 +15,7 @@ namespace TodoApi.Controllers
     [ApiController]
     public class TodoItemsController : ControllerBase
     {
-        private string[] furnitureNames;
+        private List<Dictionary<string, string>> furnitureNamesAndSurface;
         private Dictionary<string, byte[]> photos;
         private Dictionary<string, byte[]> fbx;
         private byte[] allPhotosInZip;
@@ -23,6 +23,7 @@ namespace TodoApi.Controllers
 
         public TodoItemsController()
         {
+            furnitureNamesAndSurface = new List<Dictionary<string, string>>();
             photos = new Dictionary<string, byte[]>();
             fbx = new Dictionary<string, byte[]>();
 
@@ -36,7 +37,7 @@ namespace TodoApi.Controllers
         [Route("start")]
         public async Task<ActionResult<string>> GetFurnitureNames()
         {
-            var jsonName = JsonConvert.SerializeObject(furnitureNames);
+            var jsonName = JsonConvert.SerializeObject(furnitureNamesAndSurface);
             return Content(jsonName);
         }
 
@@ -66,10 +67,13 @@ namespace TodoApi.Controllers
         private void GetNames()
         {
             var directories = Directory.GetDirectories(path);
-            var names = new string[directories.Count()];
             for (int i = 0; i < directories.Count(); i++)
-                names[i] = Path.GetFileName(directories[i]);
-            furnitureNames = names;
+            {
+                var nameAndSurface = Path.GetFileName(directories[i]).Split("; ");
+                var dict = new Dictionary<string, string>();
+                dict[nameAndSurface[0]] = nameAndSurface[1];
+                furnitureNamesAndSurface.Add(dict);
+            }
         }        
 
         private void ConvertFilesToBytes(string fileFormat, Dictionary<string, byte[]> bytes)
