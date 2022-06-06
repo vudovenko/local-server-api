@@ -60,8 +60,8 @@ namespace TodoApi.Controllers
         {
             TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
             var newName = ti.ToTitleCase(name) + ".fbx";
-            byte[] fbxInZip = GetFBXFileIntoZip(newName);
-            await Response.Body.WriteAsync(fbxInZip, 0, fbxInZip.Length);
+            byte[] fbxInBytes = getFBXInBytes(newName);
+            await Response.Body.WriteAsync(fbxInBytes, 0, fbxInBytes.Length);
         }
 
         private void GetNames()
@@ -74,7 +74,20 @@ namespace TodoApi.Controllers
                 dict[nameAndSurface[0]] = nameAndSurface[1];
                 furnitureNamesAndSurface.Add(dict);
             }
-        }        
+        }
+        
+        private byte[] getFBXInBytes(string fbxName)
+        {
+            var directories = Directory.GetDirectories(path);
+            foreach (var dir in directories)
+            {
+                var filePath = Directory.GetFiles(dir, fbxName);
+                var fileName = Path.GetFileName(filePath.First());
+                if (fbxName == fileName)
+                    return System.IO.File.ReadAllBytes(filePath.First());
+            }
+            return new byte[0];
+        }
 
         private void ConvertFilesToBytes(string fileFormat, Dictionary<string, byte[]> bytes)
         {
@@ -107,29 +120,28 @@ namespace TodoApi.Controllers
             }
         }
 
-        private byte[] GetFBXFileIntoZip(string fileName)
-        {
-            using (var zipToOpen = new MemoryStream())
-            {
-                using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update))
-                {
-                    foreach (var fbxName in fbx.Keys)
-                    {
-                        if (fbxName == fileName)
-                        {
-                            ZipArchiveEntry readmeEntry = archive.CreateEntry(fbxName);
-                            using (Stream stream = readmeEntry.Open())
-                            {
-                                stream.Write(fbx[fbxName]);
-                                break;
-                            }
-                        }
+        //private byte[] GetFBXFileIntoZip(string fileName)
+        //{
+        //    using (var zipToOpen = new MemoryStream())
+        //    {
+        //        using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update))
+        //        {
+        //            foreach (var fbxName in fbx.Keys)
+        //            {
+        //                if (fbxName == fileName)
+        //                {
+        //                    ZipArchiveEntry readmeEntry = archive.CreateEntry(fbxName);
+        //                    using (Stream stream = readmeEntry.Open())
+        //                    {
+        //                        stream.Write(fbx[fbxName]);
+        //                        break;
+        //                    }
+        //                }
                         
-                    }
-                }
-                return zipToOpen.ToArray();
-            }
-        }
-
+        //            }
+        //        }
+        //        return zipToOpen.ToArray();
+        //    }
+        //}
     }
 }
