@@ -27,10 +27,10 @@ namespace TodoApi.Controllers
             photos = new Dictionary<string, byte[]>();
             unity3d = new Dictionary<string, byte[]>();
 
-            GetNames();
-            ConvertFilesToBytes("*png", photos);
-            ConvertFilesToBytes("*unity3d", unity3d);
-            PackPhotosIntoZip();
+            getNames();
+            convertFilesToBytes("*png", photos);
+            convertFilesToBytes("*unity3d", unity3d);
+            packPhotosIntoZip();
 
         }
 
@@ -60,11 +60,12 @@ namespace TodoApi.Controllers
         {
             TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
             var newName = ti.ToTitleCase(name) + ".unity3d";
-            byte[] fbxInBytes = getFileInBytes(newName);
-            await Response.Body.WriteAsync(fbxInBytes, 0, fbxInBytes.Length);
+            if (!unity3d.Keys.Contains(newName))
+                return;
+            await Response.Body.WriteAsync(unity3d[newName]);
         }
 
-        private void GetNames()
+        private void getNames()
         {
             var directories = Directory.GetDirectories(path);
             for (int i = 0; i < directories.Count(); i++)
@@ -75,32 +76,21 @@ namespace TodoApi.Controllers
                 furnitureNamesAndSurface.Add(dict);
             }
         }
-        
-        private byte[] getFileInBytes(string fbxName)
-        {
-            var directories = Directory.GetDirectories(path);
-            foreach (var dir in directories)
-            {
-                var filePath = Directory.GetFiles(dir, fbxName);
-                if (filePath.Length != 0)
-                    return System.IO.File.ReadAllBytes(filePath.First());
-            }
-            return new byte[0];
-        }
 
-        private void ConvertFilesToBytes(string fileFormat, Dictionary<string, byte[]> bytes)
+        private void convertFilesToBytes(string fileFormat, Dictionary<string, byte[]> bytes)
         {
             var directories = Directory.GetDirectories(path);
-            //var names = new string[directories.Count()];
             foreach (var dir in directories)
             {
                 var filePath = Directory.GetFiles(dir, fileFormat);
+                if (filePath.Length == 0)
+                    continue;
                 var fileName = Path.GetFileName(filePath.First());
                 bytes.Add(fileName, System.IO.File.ReadAllBytes(filePath.First()));
             }
         }
 
-        private void PackPhotosIntoZip()
+        private void packPhotosIntoZip()
         {
             using (var zipToOpen = new MemoryStream())
             {
@@ -118,29 +108,5 @@ namespace TodoApi.Controllers
                 allPhotosInZip = zipToOpen.ToArray();
             }
         }
-
-        //private byte[] GetFBXFileIntoZip(string fileName)
-        //{
-        //    using (var zipToOpen = new MemoryStream())
-        //    {
-        //        using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update))
-        //        {
-        //            foreach (var fbxName in fbx.Keys)
-        //            {
-        //                if (fbxName == fileName)
-        //                {
-        //                    ZipArchiveEntry readmeEntry = archive.CreateEntry(fbxName);
-        //                    using (Stream stream = readmeEntry.Open())
-        //                    {
-        //                        stream.Write(fbx[fbxName]);
-        //                        break;
-        //                    }
-        //                }
-                        
-        //            }
-        //        }
-        //        return zipToOpen.ToArray();
-        //    }
-        //}
     }
 }
