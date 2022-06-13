@@ -17,7 +17,7 @@ namespace TodoApi.Controllers
     {
         private List<Dictionary<string, string>> furnitureNamesAndSurface;
         private Dictionary<string, byte[]> photos;
-        private Dictionary<string, byte[]> fbx;
+        private Dictionary<string, byte[]> unity3d;
         private byte[] allPhotosInZip;
         private string path = ""; // enter the path to the photo folder here
 
@@ -25,11 +25,11 @@ namespace TodoApi.Controllers
         {
             furnitureNamesAndSurface = new List<Dictionary<string, string>>();
             photos = new Dictionary<string, byte[]>();
-            fbx = new Dictionary<string, byte[]>();
+            unity3d = new Dictionary<string, byte[]>();
 
             GetNames();
-            ConvertFilesToBytes("*jpg", photos);
-            ConvertFilesToBytes("*fbx", fbx);
+            ConvertFilesToBytes("*png", photos);
+            ConvertFilesToBytes("*unity3d", unity3d);
             PackPhotosIntoZip();
 
         }
@@ -51,16 +51,16 @@ namespace TodoApi.Controllers
         public async Task GetPhotos(string name)
         {
             TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
-            var newName = ti.ToTitleCase(name) + ".jpg";
+            var newName = ti.ToTitleCase(name) + ".png";
             await Response.Body.WriteAsync(photos[newName], 0, photos[newName].Length);
         }
 
         [Route("asset/{name}")]
-        public async Task ConvertFBXToBytes(string name)
+        public async Task ConvertUnity3dToBytes(string name)
         {
             TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
-            var newName = ti.ToTitleCase(name) + ".fbx";
-            byte[] fbxInBytes = getFBXInBytes(newName);
+            var newName = ti.ToTitleCase(name) + ".unity3d";
+            byte[] fbxInBytes = getFileInBytes(newName);
             await Response.Body.WriteAsync(fbxInBytes, 0, fbxInBytes.Length);
         }
 
@@ -76,14 +76,13 @@ namespace TodoApi.Controllers
             }
         }
         
-        private byte[] getFBXInBytes(string fbxName)
+        private byte[] getFileInBytes(string fbxName)
         {
             var directories = Directory.GetDirectories(path);
             foreach (var dir in directories)
             {
                 var filePath = Directory.GetFiles(dir, fbxName);
-                var fileName = Path.GetFileName(filePath.First());
-                if (fbxName == fileName)
+                if (filePath.Length != 0)
                     return System.IO.File.ReadAllBytes(filePath.First());
             }
             return new byte[0];
